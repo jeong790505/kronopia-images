@@ -1,0 +1,57 @@
+<!-- kronopia 다가오는 금융일정 카드 (Blogger 레이아웃 > 사이드바 > HTML/JavaScript 가젯) -->
+<style>
+.kcu-card{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;border:1px solid #E5E7EB;border-radius:14px;background:#fff;padding:16px 16px 12px;color:#111827;line-height:1.5;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.kcu-card *{box-sizing:border-box}
+.kcu-h{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 10px}
+.kcu-h b{font-size:15px;font-weight:800}
+.kcu-h span{font-size:11px;color:#6B7280}
+.kcu-li{display:flex;gap:10px;padding:8px 0;border-top:1px solid #F3F4F6;text-decoration:none!important;color:inherit!important}
+.kcu-li:first-of-type{border-top:0}
+.kcu-bar{width:4px;border-radius:3px;flex:none}
+.kcu-d{font-size:12px;font-weight:700;color:#374151;white-space:nowrap;min-width:64px}
+.kcu-d small{display:block;font-weight:400;color:#6B7280;font-size:11px}
+.kcu-t{font-size:13px;font-weight:600;line-height:1.4}
+.kcu-t em{font-style:normal;font-size:10px;color:#92400E;background:#FFFBEB;border:1px solid #FDE68A;border-radius:3px;padding:0 4px;margin-left:4px;vertical-align:1px}
+.kcu-more{display:block;text-align:center;margin-top:8px;padding:9px 0;border-radius:9px;background:#0F766E;color:#fff!important;font-size:13px;font-weight:700;text-decoration:none!important}
+.kcu-pc{margin-top:40px;max-width:260px;position:sticky;top:84px}
+.kcu-mo{margin:28px 0 8px}
+.kcu-mo .kcu-h b{font-size:16px}
+</style>
+<script>
+(function(){
+if(!document.body.classList.contains('item-view'))return;
+if(/\/p\/financial-calendar\.html/.test(location.pathname))return;
+var URL='https://cdn.jsdelivr.net/gh/jeong790505/kronopia-images@main/calendar/events.json',CAL='https://www.kronopia.com/p/financial-calendar.html';
+var COL={rate:'#E5484D',infl:'#F08C00',trade:'#12A594',earn:'#3E63DD',opt:'#8E4EC6'};
+function p2(n){return(n<10?'0':'')+n}
+function iso(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
+function nth(y,m,dow,n){var d=new Date(y,m,1);return new Date(y,m,1+(dow-d.getDay()+7)%7+7*(n-1))}
+function back(d,h){d=new Date(d);while(d.getDay()%6==0||h[iso(d)])d.setDate(d.getDate()-1);return d}
+function esc(s){return String(s||'').replace(/[&<>"]/g,function(x){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x]})}
+function card(list,cls,n){
+  var h='<div class="kcu-card '+cls+'"><div class="kcu-h"><b>📅 다가오는 금융일정</b><span>한국시간</span></div>';
+  list.slice(0,n).forEach(function(e){var d=new Date(e.d+'T00:00:00');
+    h+='<a class="kcu-li" href="'+CAL+'"><i class="kcu-bar" style="background:'+COL[e.cat]+'"></i><div class="kcu-d">'+(d.getMonth()+1)+'/'+d.getDate()+' ('+'일월화수목금토'[d.getDay()]+')<small>'+(e.t||'')+'</small></div><div class="kcu-t">'+(e.c=='US'?'🇺🇸 ':'🇰🇷 ')+esc(e.title)+(e.s=='예상'?'<em>예상</em>':'')+'</div></a>'});
+  return h+'<a class="kcu-more" href="'+CAL+'">전체 달력 보기 →</a></div>';
+}
+function place(data){
+  var n=new Date(Date.now()+9*3600e3),today=n.getUTCFullYear()+'-'+p2(n.getUTCMonth()+1)+'-'+p2(n.getUTCDate());
+  var kh={},uh={};data.holidays.KR.forEach(function(x){kh[x]=1});data.holidays.US.forEach(function(x){uh[x]=1});
+  var ev=data.events.slice(),y=+today.slice(0,4),m=+today.slice(5,7)-1;
+  for(var i=0;i<2;i++){var yy=y+Math.floor((m+i)/12),mm=(m+i)%12,q=mm%3==2;
+    ev.push({d:iso(back(nth(yy,mm,4,2),kh)),t:'15:20',c:'KR',cat:'opt',s:'확정',title:q?'코스피200 동시만기 (네 마녀의 날)':'코스피200 옵션 월물 만기'});
+    ev.push({d:iso(back(nth(yy,mm,5,3),uh)),t:'현지 마감',c:'US',cat:'opt',s:'확정',title:q?'미국 쿼드러플 위칭':'미국 옵션 월간 만기'});}
+  ev=ev.filter(function(e){return e.d>=today&&e.k!='kr_trade10'}).sort(function(a,b){return(a.d+a.t).localeCompare(b.d+b.t)});
+  if(!ev.length)return;
+  var body=document.querySelector('.post-body'),side=document.querySelector('.post-body-container .post-sidebar');
+  if(side){side.insertAdjacentHTML('beforeend',card(ev,'kcu-pc',6));side.style.bottom='0'}
+  if(body)body.insertAdjacentHTML('afterend',card(ev,'kcu-mo',3));
+  function sync(){var pc=side&&getComputedStyle(side).display!='none'&&window.innerWidth>=1024;
+    document.querySelectorAll('.kcu-pc').forEach(function(x){x.style.display=pc?'':'none'});
+    document.querySelectorAll('.kcu-mo').forEach(function(x){x.style.display=pc?'none':''});}
+  sync();window.addEventListener('resize',sync);setTimeout(sync,1500);
+}
+function go(){fetch(URL).then(function(r){return r.json()}).then(place).catch(function(){})}
+if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',go);else go();
+})();
+</script>
